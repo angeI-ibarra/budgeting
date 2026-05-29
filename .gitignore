@@ -1,0 +1,10 @@
+# Keep the folder structure intact via .gitkeep, but ignore raw data
+statements/**
+statements/**/*.*
+!statements/**/.gitkeep
+# Local Python virtual environment
+venv/
+# macOS directory layout configuration files
+.DS_Store
+.AppleDouble
+.LSOverride
