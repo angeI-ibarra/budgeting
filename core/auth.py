@@ -34,7 +34,7 @@ def resolve_credentials(credentials_path: str, scopes: Optional[List[str]] = Non
     if credentials_env_value:
         print("\nConnecting to Google Sheets using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable...")
         try:
-            credentials_info = json.loads(credentials_env_value)
+            credentials_info: Dict[str, Any] = json.loads(credentials_env_value)
             credentials = Credentials.from_service_account_info(credentials_info, scopes=scopes)
             return credentials
         except Exception as env_error:

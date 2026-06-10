@@ -44,7 +44,7 @@ def parse_nfcu_csv_credit(file_path: str) -> List[Dict[str, Any]]:
     """
     transactions_list: List[Dict[str, Any]] = []
     with open(file_path, mode='r', encoding='utf-8-sig') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
+        csv_reader: csv.DictReader = csv.DictReader(csv_file)
         for csv_row in csv_reader:
             # NFCU fields: 'Transaction Date' or 'Posting Date', 'Amount', 'Description', 'Type Group'
             date_string: Optional[str] = csv_row.get('Transaction Date') or csv_row.get('Posting Date')
@@ -86,7 +86,7 @@ def parse_nfcu_csv_checking(file_path: str) -> List[Dict[str, Any]]:
     """
     transactions_list: List[Dict[str, Any]] = []
     with open(file_path, mode='r', encoding='utf-8-sig') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
+        csv_reader: csv.DictReader = csv.DictReader(csv_file)
         for csv_row in csv_reader:
             # NFCU fields: 'Transaction Date' or 'Posting Date', 'Amount', 'Description'
             date_string: Optional[str] = csv_row.get('Transaction Date') or csv_row.get('Posting Date')
@@ -156,7 +156,7 @@ def parse_amx_csv(file_path: str) -> List[Dict[str, Any]]:
     """Parses American Express (Gold/Plat) CSV files."""
     transactions_list: List[Dict[str, Any]] = []
     with open(file_path, mode='r', encoding='utf-8-sig') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
+        csv_reader: csv.DictReader = csv.DictReader(csv_file)
         for csv_row in csv_reader:
             # AMEX fields: 'Date', 'Description', 'Amount'
             date_string: Optional[str] = csv_row.get('Date')
@@ -189,7 +189,7 @@ def parse_chase_csv(file_path: str) -> List[Dict[str, Any]]:
     """Parses Chase Visa CSV files."""
     transactions_list: List[Dict[str, Any]] = []
     with open(file_path, mode='r', encoding='utf-8-sig') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
+        csv_reader: csv.DictReader = csv.DictReader(csv_file)
         for csv_row in csv_reader:
             # Chase fields: 'Transaction Date' or 'Post Date', 'Description', 'Amount'
             date_string: Optional[str] = csv_row.get('Transaction Date') or csv_row.get('Post Date')
