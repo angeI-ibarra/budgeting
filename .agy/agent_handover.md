@@ -49,10 +49,11 @@ Different banks export outflows and inflows with conflicting signs. The script n
   2. Two corresponding outflow transactions are dynamically generated sharing the same transaction date (type/category: `"401k"` and `"HSA"`, amount: negative contributions, account: `"NFCU Checking"`).
   3. The main payroll deposit is categorized as `"Balance Adjustment"`.
 
-### D. Schema & Sync Markers
+### D. Schema, Deduplication & Card Ending Filtering
 * The sheet columns are `[DATE, AMOUNT, TYPE, ACCOUNT, DESCRIPTION, LAST UPDATED]`.
 * Every successful sync appends a marker row at the end of the batch: `[current_run_date, "", "", "", "", "*"]`.
-* The deduplication check ignores this marker row and verifies unique keys constructed as `(date, description.lower(), round(amount, 2))`.
+* **Deduplication Check:** Checks unique keys constructed as `(date, description.lower(), round(amount, 2), account.lower())`.
+  * **Accounting Format Handling:** Sheet amounts are parsed using a robust routine that handles accounting negative formats like `($123.45)` or `(123.45)` as well as extra spaces, preventing parsing failures that cause duplicate syncs.
 
 ### E. Secure Credentials Resolution
 * Credentials for Google Sheets API are resolved dynamically from:
@@ -70,4 +71,5 @@ Different banks export outflows and inflows with conflicting signs. The script n
    * Test Suite: `python3 test/test_app.py`
    * Dry Run: `python3 app.py --dry-run`
    * Live Sync: `python3 -u app.py` (requires credentials stored in macOS Keychain, set in `GOOGLE_APPLICATION_CREDENTIALS_JSON`, or locally at `service_account.json`)
+5. **Git Operations Constraint:** The agent has permission to run all local commands regarding the project and debugging, but **MUST NOT** commit or push any changes.
 
