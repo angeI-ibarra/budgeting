@@ -80,15 +80,15 @@ class LyraPayrollCategoryRule(BaseCategoryRule):
 
 
 @register_category_rule
-class AppleMomAidSpecialCategoryRule(BaseCategoryRule):
-    """
-    If description contains 'Apple' (case-insensitive) and the transaction amount
-    absolute value is equal to 2.99, set the category to 'Mom Aid'.
-    """
+class MomAidSpecialCategoryRule(BaseCategoryRule):
+    """Matches Mom aid"""
     def matches(self, transaction: Dict[str, Any], account_key: str, all_transactions: Dict[str, List[Dict[str, Any]]]) -> bool:
         description_uppercase: str = transaction['description'].upper()
         amount_value: float = transaction['amount']
-        return "APPLE" in description_uppercase and abs(abs(amount_value) - 2.99) < 0.01
+        if "APPLE" in description_uppercase and abs(abs(amount_value) - 2.99) < 0.01:
+            return True
+        if account_key == 'nfcu_checking' and abs(amount_value) == 200 and "ZELLE" in description_uppercase:
+            return True
 
     def get_category(self, valid_types: List[str], transaction: Dict[str, Any]) -> str:
         return "Mom Aid"

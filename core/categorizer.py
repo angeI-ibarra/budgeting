@@ -59,7 +59,7 @@ def preprocess_transfer_description(transaction: Dict[str, Any], account_key: st
             elif "CHASE" in description_uppercase:
                 transaction['description'] = "Transfer to Chase Visa"
                 return True
-            elif any(keyword in description_uppercase for keyword in ["AMERICAN EXPRESS", "AMX", "AMEX"]):
+            elif any(re.search(rf"\b{keyword}\b", description_uppercase) for keyword in ["AMERICAN EXPRESS", "AMX", "AMEX"]):
                 # Note: NFCU Checking statements log a generic outflow (e.g., "Amex Epayment")
                 # without specifying the destination card (Gold vs. Platinum).
                 # To resolve this, we perform a look-ahead cross-reference scan over parsed AMX Gold
