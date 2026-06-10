@@ -7,7 +7,7 @@ This document provides context, design patterns, and constraints for the next ag
 ## 1. Project Overview
 The project is a Python-based utility that automatically parses financial statement exports (CSV format) from various institutions, normalizes their transactions, matches categories, handles account transfers, processes payroll adjustments, and syncs them to a Google Sheet.
 
-* **Repository Root:** `/Users/angel/Documents/Dev/Budgeting`
+* **Repository Root:** `/Users/angel/Documents/GitHub/budgeting`
 * **Google Sheet ID:** `1V9jTJgLd5Y2V9Fn7JTwOS8IisdmXe82Vy5Lh7rBQgeY`
 
 ---
@@ -18,11 +18,12 @@ The project is a Python-based utility that automatically parses financial statem
   * **`core/__init__.py`**: Exposes the package API for simple imports.
   * **`core/config.py`**: Global constants (`SHEET_NAME`, contribution levels, and bank `ACCOUNTS_CONFIG` patterns).
   * **`core/auth.py`**: Handles credential retrieval and authentication flow.
-  * **`core/parser.py`**: Contains CSV parsers for bank and credit statements.
-  * **`core/categorizer.py`**: Transaction classification rules and transfer cross-referencing logic.
+  * **`core/parser.py`**: Contains CSV parsers for bank and credit statements (splitting checking and credit card parsing).
+  * **`core/categorizer.py`**: Transaction classification orchestration, fuzzy account name matching, and cross-account transfer description preprocessing logic.
+  * **`core/category_rules.py`**: Declarative matching logic and specialized categories (like AccountTransfer, HSA/401k contribution, Lyra payroll, etc.).
+  * **`core/category_rules_regex.json`**: Local category rules mapping categories to regex patterns.
 * **`test/test_app.py`**: The unit test suite, updated to test functions imported directly from `core`.
 * **`Statements/`**: Local folder where raw statement CSV files are placed.
-* **`transaction_rules.json`**: Local category rules mapping categories to regex patterns.
 * **`all_accounts.json`**: Local JSON cache of valid account names.
 * **`setup_guide.md`**: Guide for setting up service accounts, credentials storage, and APIs.
 
@@ -63,8 +64,9 @@ Different banks export outflows and inflows with conflicting signs. The script n
 
 ## 4. Key Developer Constraints
 1. **Fully Verbose Variable Names:** Always use descriptive, fully verbose variable names everywhere (including loop indexes, dictionary comprehensions, etc.). Never use short or abbreviated variables like `t`, `n`, or `acc`.
-2. **Dry Run Mode:** `python3 app.py --dry-run` performs parsing and local-only logic using local backups (`all_accounts.json` and `transaction_rules.json`), writing output to `test/dry_run_results.csv` without hitting the Google Sheets API.
-3. **Execution Commands:**
+2. **Dry Run Mode:** `python3 app.py --dry-run` performs parsing and local-only logic using local backups (`all_accounts.json` and `core/category_rules_regex.json`), writing output to `test/dry_run_results.csv` without hitting the Google Sheets API.
+3. **Variable Type Hints:** Ensure that all variables, function parameters, and return types are explicitly type-hinted/annotated to maintain strict static type safety and consistency throughout the codebase.
+4. **Execution Commands:**
    * Test Suite: `python3 test/test_app.py`
    * Dry Run: `python3 app.py --dry-run`
    * Live Sync: `python3 -u app.py` (requires credentials stored in macOS Keychain, set in `GOOGLE_APPLICATION_CREDENTIALS_JSON`, or locally at `service_account.json`)
