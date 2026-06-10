@@ -95,9 +95,10 @@ def main() -> None:
     # 2. Parse all transactions from discovered files
     parsed_transactions: Dict[str, List[Dict[str, Any]]] = {}
     for account_key, file_path in discovered_files.items():
-        account_configuration = ACCOUNTS_CONFIG[account_key]
+        account_configuration: Dict[str, Any] = ACCOUNTS_CONFIG[account_key]
         parser_type: str = account_configuration['parser']
         try:
+            transactions_list: List[Dict[str, Any]]
             if parser_type == 'nfcu':
                 if account_configuration['account_type'] == 'credit':
                     transactions_list: List[Dict[str, Any]] = parse_nfcu_csv_credit(file_path)
@@ -124,7 +125,7 @@ def main() -> None:
     all_accounts: List[str] = []
     valid_types: List[str] = []
     rules: Dict[str, List[str]] = {}
-    existing_transaction_frequencies: Counter[Tuple[datetime.date, str, float]] = collections.Counter()
+    existing_transaction_frequencies: Counter[Tuple[datetime.date, str, float, str]] = collections.Counter()
 
     if args.dry_run:
         print("\n--- DRY RUN: Local Sync only ---")
@@ -240,27 +241,43 @@ def main() -> None:
             raw_transaction_data: List[List[str]] = transactions_worksheet.get_all_values()
 
             if raw_transaction_data:
-                headers = [header.strip().upper() for header in raw_transaction_data[0]]
+                # Find the row containing 'DATE', 'AMOUNT', and 'DESCRIPTION'
+                header_row_index: int = 0
+                for index, row in enumerate(raw_transaction_data):
+                    row_upper: List[str] = [cell.strip().upper() for cell in row]
+                    if 'DATE' in row_upper and 'AMOUNT' in row_upper and 'DESCRIPTION' in row_upper:
+                        header_row_index = index
+                        break
+
+                headers: List[str] = [header.strip().upper() for header in raw_transaction_data[header_row_index]]
                 try:
                     date_index: int = headers.index('DATE')
                     amount_index: int = headers.index('AMOUNT')
                     description_index: int = headers.index('DESCRIPTION')
+                    account_index: int = headers.index('ACCOUNT')
                 except ValueError:
                     # Default layout: [DATE, AMOUNT, TYPE, ACCOUNT, DESCRIPTION, STATUS]
-                    date_index, amount_index, description_index = 0, 1, 4
+                    date_index, amount_index, description_index, account_index = 0, 1, 4, 3
 
-                for row_data in raw_transaction_data[1:]:
-                    if len(row_data) <= max(date_index, amount_index, description_index):
+                for row_data in raw_transaction_data[header_row_index + 1:]:
+                    if len(row_data) <= max(date_index, amount_index, description_index, account_index):
                         continue
-                    date_value = parse_date_flexible(row_data[date_index])
+                    date_value: Optional[datetime.date] = parse_date_flexible(row_data[date_index])
                     if not date_value:
                         continue
+
+                    raw_amount: str = row_data[amount_index].strip().replace('$', '').replace(',', '')
+                    if raw_amount.startswith('(') and raw_amount.endswith(')'):
+                        raw_amount = '-' + raw_amount[1:-1]
+                    raw_amount = raw_amount.replace(' ', '')
                     try:
-                        amount_value = float(row_data[amount_index].replace('$', '').replace(',', '').strip())
+                        amount_value: float = float(raw_amount)
                     except ValueError:
                         continue
-                    description_value = row_data[description_index].strip().lower()
-                    existing_transaction_frequencies[(date_value, description_value, round(amount_value, 2))] += 1
+
+                    description_value: str = row_data[description_index].strip().lower()
+                    account_value: str = row_data[account_index].strip().lower()
+                    existing_transaction_frequencies[(date_value, description_value, round(amount_value, 2), account_value)] += 1
             print(f"Loaded {sum(existing_transaction_frequencies.values())} existing transactions for deduplication.")
         except Exception as error:
             print(f"Error reading 'Transactions' tab: {error}")
@@ -271,7 +288,7 @@ def main() -> None:
 
     print("\nProcessing and categorizing transactions...")
     for account_key, transactions_list in parsed_transactions.items():
-        account_configuration = ACCOUNTS_CONFIG[account_key]
+        account_configuration: Dict[str, Any] = ACCOUNTS_CONFIG[account_key]
 
         # Determine the sheet account name by fuzzy matching
         sheet_account: str = match_account_name(account_configuration['default_name'], all_accounts)
@@ -290,10 +307,14 @@ def main() -> None:
             description: str = transaction['description']
 
             # Key for deduplication matching
-            deduplication_key: Tuple[datetime.date, str, float] = (date_object, description.lower(), round(amount_value, 2))
+            deduplication_key: Tuple[datetime.date, str, float, str] = (date_object, description.lower(), round(amount_value, 2), sheet_account.lower())
 
+            is_duplicate: bool = False
             if existing_transaction_frequencies[deduplication_key] > 0:
                 existing_transaction_frequencies[deduplication_key] -= 1
+                is_duplicate = True
+
+            if is_duplicate:
                 skipped_duplicates += 1
                 continue
 
