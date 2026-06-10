@@ -77,7 +77,9 @@ def parse_nfcu_csv(file_path, account_type):
                 })
             else:
                 # NFCU Checking: Inspect Description column.
-                # Positive only if description contains: "Transfer From", "Deposit", "Dividend", or "Reward Redemption".
+                # Positive only if description contains: "Transfer From", "Deposit", "Dividend", or
+                # "Reward Redemption".
+
                 is_positive = False
                 description_uppercase = description.upper()
                 for keyword in ["TRANSFER FROM", "DEPOSIT", "DIVIDEND", "REWARD REDEMPTION", "PAID FAMILY"]:
@@ -91,21 +93,21 @@ def parse_nfcu_csv(file_path, account_type):
                 # Exclude entries that contain "coupa"
                 if "LYRA" in description_uppercase and "COUPA" not in description_uppercase:
                     amount_value += CONTRIBUTION_401K_AMOUNT + CONTRIBUTION_HSA_AMOUNT
-                    
+
                     transactions_list.append({
                         'date': date_object,
                         'amount': amount_value,
                         'description': description,
                         'raw': csv_row
                     })
-                    
+
                     transactions_list.append({
                         'date': date_object,
                         'amount': -CONTRIBUTION_401K_AMOUNT,
                         'description': "401k",
                         'raw': csv_row
                     })
-                    
+
                     transactions_list.append({
                         'date': date_object,
                         'amount': -CONTRIBUTION_HSA_AMOUNT,
