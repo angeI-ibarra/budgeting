@@ -1,6 +1,7 @@
 from .config import (
     SHEET_NAME,
     SCRIPT_DIR,
+    CORE_DIR,
     STATEMENTS_DIR,
     CONTRIBUTION_401K_AMOUNT,
     CONTRIBUTION_HSA_AMOUNT,
@@ -10,7 +11,8 @@ from .auth import resolve_credentials
 from .parser import (
     get_latest_file,
     parse_date_flexible,
-    parse_nfcu_csv,
+    parse_nfcu_csv_credit,
+    parse_nfcu_csv_checking,
     parse_amx_csv,
     parse_chase_csv
 )
