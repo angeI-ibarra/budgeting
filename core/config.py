@@ -16,7 +16,7 @@ CONTRIBUTION_HSA_AMOUNT = 130.00
 ACCOUNTS_CONFIG = {
     'nfcu_checking': {
         'folder': 'NFCU',
-        'pattern': r'^checkings?\.csv$',
+        'pattern': r'^checking?\.csv$',
         'account_type': 'cash',
         'default_name': 'NFCU Checking',
         'parser': 'nfcu'
