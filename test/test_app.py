@@ -259,7 +259,7 @@ class TestBudgetAutomation(unittest.TestCase):
         self.assertEqual(type_checking_exception_1, "Balance Adjustment")
         self.assertEqual(transaction_checking_exception_1['description'], "Transfer From Raymond Castillo Jr -0362")
 
-        transaction_checking_exception_2 = {'description': "Transfer from Zelle", 'amount': 200.00, 'date': date(2026, 5, 13)}
+        transaction_checking_exception_2 = {'description': "Transfer from Zelle", 'amount': 250.00, 'date': date(2026, 5, 13)}
         type_checking_exception_2 = match_transaction_type(transaction_checking_exception_2, 'nfcu_checking', {}, valid_types, MOCK_RULES)
         self.assertEqual(type_checking_exception_2, "Balance Adjustment")
         self.assertEqual(transaction_checking_exception_2['description'], "Transfer from Zelle")
