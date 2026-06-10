@@ -1,7 +1,8 @@
 {
   "Account Transfer": [],
   "Balance Adjustment": [
-    "Paid Family And Medical Leave"
+    "Paid Family And Medical Leave",
+    "ATM Fee"
   ],
   "Starting Balance": [],
   "Dining Out": [
@@ -22,6 +23,7 @@
     "IN-N-OUT",
     "PANDA EXPRESS",
     "MARINATION",
+    "MARINATISEATTLE",
     "FEED CO",
     "POPEYES",
     "CHUKIS",
@@ -40,13 +42,16 @@
     "CRAWFISH",
     "EZELLS",
     "FRIDAS",
-    "BIG MARI"
+    "BIG MARI",
+    "PAGLIACCI"
   ],
   "Snacks": [
     "SALT AND STRAW",
     "DOWNTOWN DELI",
     "7-ELEVEN",
-    "KFC"
+    "KFC",
+    "SALT AND",
+    "BAKERY"
   ],
   "Groceries": [
     "UWAJIMAYA",
@@ -56,7 +61,8 @@
     "SAFEWAY",
     "MERCADO",
     "QFC",
-    "WHOLEFDS"
+    "WHOLEFDS",
+    "Whole Foods"
   ],
   "Coffee": [
     "MACRINA",
@@ -71,7 +77,9 @@
   "Car Payment": [
     "USAA"
   ],
-  "Car Insurance": [],
+  "Car Insurance": [
+    "Progressive"
+  ],
   "Electricity Bill": [
     "SEATTLE CITY LIGHT"
   ],
@@ -148,7 +156,8 @@
     "PARKING"
   ],
   "Train Fare": [
-    "MTS"
+    "MTS",
+    "NYCT PAYGO"
   ],
   "Tolls": [],
   "Uber": [
@@ -186,7 +195,9 @@
   "Electronicz": [
     "Best Buy"
   ],
-  "PC parts/accessories": [],
+  "PC parts/accessories": [
+    "FORMD"
+  ],
   "Phone": [],
   "Video Games": [
     "JAGEX"
@@ -215,7 +226,8 @@
   ],
   "Alcohol": [
     "BAR",
-    "PUB"
+    "PUB",
+    "EL LUGAR"
   ],
   "Weed": [],
   "Other AOD": [],
@@ -246,7 +258,11 @@
     "INTUIT"
   ],
   "Taxes Due": [],
-  "Everything Else": [],
+  "Everything Else": [
+    "FEDEX"
+  ],
   "Outing w/ Date": [],
-  "Fees": []
+  "Fees": [
+    "CLEAR"
+  ]
 }
