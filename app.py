@@ -6,6 +6,7 @@ import argparse
 import collections
 import sys
 from datetime import datetime
+from typing import List, Dict, Any, Tuple, Optional, Counter
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -13,11 +14,13 @@ from google.oauth2.service_account import Credentials
 from core import (
     SHEET_NAME,
     SCRIPT_DIR,
+    CORE_DIR,
     STATEMENTS_DIR,
     ACCOUNTS_CONFIG,
     resolve_credentials,
     get_latest_file,
-    parse_nfcu_csv,
+    parse_nfcu_csv_credit,
+    parse_nfcu_csv_checking,
     parse_amx_csv,
     parse_chase_csv,
     match_transaction_type,
@@ -25,14 +28,14 @@ from core import (
     parse_date_flexible
 )
 
-def initialize_local_files(dry_run):
+def initialize_local_files(dry_run: bool) -> None:
     """
     Ensures local storage JSON files exist.
     If dry_run is True, both files must exist, otherwise we exit.
     If dry_run is False, we initialize empty placeholders if they don't exist.
     """
-    transaction_rules_path = os.path.join(SCRIPT_DIR, "transaction_rules.json")
-    all_accounts_path = os.path.join(SCRIPT_DIR, "all_accounts.json")
+    transaction_rules_path: str = os.path.join(CORE_DIR, "category_rules_regex.json")
+    all_accounts_path: str = os.path.join(SCRIPT_DIR, "all_accounts.json")
 
     # 1. Handle transaction_rules.json
     if not os.path.exists(transaction_rules_path):
@@ -62,7 +65,7 @@ def initialize_local_files(dry_run):
             except Exception as error:
                 print(f"Error creating accounts file: {error}")
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Budgeting Sheet Transactions Sync Tool")
     parser.add_argument('--credentials', default='service_account.json', help='Path to Google Service Account JSON file')
     parser.add_argument('--dry-run', action='store_true', help='Parse and match transactions without writing to Google Sheets')
@@ -74,12 +77,12 @@ def main():
     print(f"Scanning for YTD statements in: {STATEMENTS_DIR}")
 
     # 1. Discover latest statements for configured accounts
-    discovered_files = {}
+    discovered_files: Dict[str, str] = {}
     for account_key, account_configuration in ACCOUNTS_CONFIG.items():
-        folder_path = os.path.join(STATEMENTS_DIR, account_configuration['folder'])
-        latest_file = get_latest_file(folder_path, account_configuration['pattern'])
+        folder_path: str = os.path.join(STATEMENTS_DIR, account_configuration['folder'])
+        latest_file: Optional[str] = get_latest_file(folder_path, account_configuration['pattern'])
         if latest_file:
-            modification_time = datetime.fromtimestamp(os.path.getmtime(latest_file)).strftime('%Y-%m-%d %H:%M:%S')
+            modification_time: str = datetime.fromtimestamp(os.path.getmtime(latest_file)).strftime('%Y-%m-%d %H:%M:%S')
             print(f"Found latest CSV for {account_key}: {os.path.basename(latest_file)} (modified: {modification_time})")
             discovered_files[account_key] = latest_file
         else:
@@ -90,13 +93,16 @@ def main():
         sys.exit(1)
 
     # 2. Parse all transactions from discovered files
-    parsed_transactions = {}
+    parsed_transactions: Dict[str, List[Dict[str, Any]]] = {}
     for account_key, file_path in discovered_files.items():
         account_configuration = ACCOUNTS_CONFIG[account_key]
-        parser_type = account_configuration['parser']
+        parser_type: str = account_configuration['parser']
         try:
             if parser_type == 'nfcu':
-                transactions_list = parse_nfcu_csv(file_path, account_type=account_configuration['account_type'])
+                if account_configuration['account_type'] == 'credit':
+                    transactions_list: List[Dict[str, Any]] = parse_nfcu_csv_credit(file_path)
+                else:
+                    transactions_list = parse_nfcu_csv_checking(file_path)
             elif parser_type == 'amx':
                 transactions_list = parse_amx_csv(file_path)
             elif parser_type == 'chase':
@@ -112,8 +118,13 @@ def main():
             print(f"Error parsing {file_path}: {error}")
 
     # 3. Authenticate and connect to Google Sheets / Load local storage files
-    all_accounts_path = os.path.join(SCRIPT_DIR, "all_accounts.json")
-    transaction_rules_path = os.path.join(SCRIPT_DIR, "transaction_rules.json")
+    all_accounts_path: str = os.path.join(SCRIPT_DIR, "all_accounts.json")
+    transaction_rules_path: str = os.path.join(CORE_DIR, "category_rules_regex.json")
+
+    all_accounts: List[str] = []
+    valid_types: List[str] = []
+    rules: Dict[str, List[str]] = {}
+    existing_transaction_frequencies: Counter[Tuple[datetime.date, str, float]] = collections.Counter()
 
     if args.dry_run:
         print("\n--- DRY RUN: Local Sync only ---")
@@ -125,7 +136,7 @@ def main():
             print(f"Error reading local accounts file: {error}.")
             sys.exit(1)
 
-        # Fetch transaction types locally from transaction_rules.json
+        # Fetch transaction types locally from category_rules_regex.json
         try:
             with open(transaction_rules_path, 'r', encoding='utf-8') as rules_file:
                 rules = json.load(rules_file)
@@ -133,8 +144,6 @@ def main():
         except Exception as error:
             print(f"Error reading local rules file: {error}.")
             sys.exit(1)
-
-        existing_transaction_frequencies = collections.Counter()
     else:
         if not gspread or not Credentials:
             print("Error: 'gspread' and 'google-auth' libraries are required. Please run: pip install -r requirements.txt")
@@ -161,31 +170,28 @@ def main():
                 backend_worksheet = spreadsheet.worksheet("BackendData")
 
             print(f"Fetching valid accounts and transaction types from '{backend_worksheet.title}' tab...")
-            backend_data = backend_worksheet.get_all_values()
-
-            all_accounts = []
-            valid_types = []
+            backend_data: List[List[str]] = backend_worksheet.get_all_values()
 
             if backend_data:
-                headers = [header.strip() for header in backend_data[0]]
+                headers: List[str] = [header.strip() for header in backend_data[0]]
                 try:
-                    accounts_column_index = headers.index("All Accounts")
+                    accounts_column_index: int = headers.index("All Accounts")
                 except ValueError:
                     print("Warning: 'All Accounts' column not found in BackendData. Defaulting to column index 0.")
                     accounts_column_index = 0
                 try:
-                    transaction_types_column_index = headers.index("Transaction Type")
+                    transaction_types_column_index: int = headers.index("Transaction Type")
                 except ValueError:
                     print("Warning: 'Transaction Type' column not found in BackendData. Defaulting to column index 1.")
                     transaction_types_column_index = 1
 
                 for row_data in backend_data[1:]:
                     if len(row_data) > accounts_column_index:
-                        account_value = row_data[accounts_column_index].strip()
+                        account_value: str = row_data[accounts_column_index].strip()
                         if account_value:
                             all_accounts.append(account_value)
                     if len(row_data) > transaction_types_column_index:
-                        transaction_type_value = row_data[transaction_types_column_index].strip()
+                        transaction_type_value: str = row_data[transaction_types_column_index].strip()
                         if transaction_type_value:
                             valid_types.append(transaction_type_value)
 
@@ -204,7 +210,7 @@ def main():
             print(f"Error backing up accounts to local file: {error}")
 
         # Fetch, Merge and persist transaction rules
-        local_rules = {}
+        local_rules: Dict[str, List[str]] = {}
         if os.path.exists(transaction_rules_path):
             try:
                 with open(transaction_rules_path, 'r', encoding='utf-8') as rules_file:
@@ -231,15 +237,14 @@ def main():
         try:
             transactions_worksheet = spreadsheet.worksheet("Transactions")
             print("Fetching existing transactions from 'Transactions' tab for deduplication...")
-            raw_transaction_data = transactions_worksheet.get_all_values()
+            raw_transaction_data: List[List[str]] = transactions_worksheet.get_all_values()
 
-            existing_transaction_frequencies = collections.Counter()
             if raw_transaction_data:
                 headers = [header.strip().upper() for header in raw_transaction_data[0]]
                 try:
-                    date_index = headers.index('DATE')
-                    amount_index = headers.index('AMOUNT')
-                    description_index = headers.index('DESCRIPTION')
+                    date_index: int = headers.index('DATE')
+                    amount_index: int = headers.index('AMOUNT')
+                    description_index: int = headers.index('DESCRIPTION')
                 except ValueError:
                     # Default layout: [DATE, AMOUNT, TYPE, ACCOUNT, DESCRIPTION, STATUS]
                     date_index, amount_index, description_index = 0, 1, 4
@@ -262,30 +267,30 @@ def main():
             sys.exit(1)
 
     # 4. Process and categorize transactions
-    to_append = []
+    to_append: List[List[Any]] = []
 
     print("\nProcessing and categorizing transactions...")
     for account_key, transactions_list in parsed_transactions.items():
         account_configuration = ACCOUNTS_CONFIG[account_key]
 
         # Determine the sheet account name by fuzzy matching
-        sheet_account = match_account_name(account_configuration['default_name'], all_accounts)
+        sheet_account: str = match_account_name(account_configuration['default_name'], all_accounts)
         print(f"\nAccount '{account_key}' maps to Google Sheet account: '{sheet_account}'")
 
-        skipped_duplicates = 0
-        added_count = 0
+        skipped_duplicates: int = 0
+        added_count: int = 0
 
         # Standardize matching helper for deduplication
         for transaction in transactions_list:
             # We match transaction types and update descriptions (if account transfer) BEFORE check deduplication
-            transaction_type = match_transaction_type(transaction, account_key, parsed_transactions, valid_types, rules)
+            transaction_type: str = match_transaction_type(transaction, account_key, parsed_transactions, valid_types, rules)
 
-            date_object = transaction['date']
-            amount_value = transaction['amount']
-            description = transaction['description']
+            date_object: datetime.date = transaction['date']
+            amount_value: float = transaction['amount']
+            description: str = transaction['description']
 
             # Key for deduplication matching
-            deduplication_key = (date_object, description.lower(), round(amount_value, 2))
+            deduplication_key: Tuple[datetime.date, str, float] = (date_object, description.lower(), round(amount_value, 2))
 
             if existing_transaction_frequencies[deduplication_key] > 0:
                 existing_transaction_frequencies[deduplication_key] -= 1
@@ -314,7 +319,7 @@ def main():
         return
 
     # Add the marker row indicating when the sheet was last updated
-    current_date_string = datetime.now().strftime('%Y-%m-%d')
+    current_date_string: str = datetime.now().strftime('%Y-%m-%d')
     to_append.append([
         current_date_string,
         "",
@@ -327,7 +332,7 @@ def main():
     print(f"\nTotal new transactions to append: {len(to_append) - 1} (plus 1 update marker row)")
 
     if args.dry_run:
-        output_file_path = os.path.join(SCRIPT_DIR, "test", "dry_run_results.csv")
+        output_file_path: str = os.path.join(SCRIPT_DIR, "test", "dry_run_results.csv")
         print("\n=== DRY RUN TRANSACTIONS TO APPEND (First 10 shown) ===")
         for index, transaction_row in enumerate(to_append[:10]):
             print(f"Row {index+1}: Date={transaction_row[0]}, Amount={transaction_row[1]}, Type={transaction_row[2]}, Account={transaction_row[3]}, Desc={transaction_row[4]}")
