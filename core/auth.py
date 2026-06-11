@@ -2,8 +2,9 @@ import os
 import sys
 import json
 from google.oauth2.service_account import Credentials
+from typing import List, Optional, Any, Dict
 
-def resolve_credentials(credentials_path, scopes=None):
+def resolve_credentials(credentials_path: str, scopes: Optional[List[str]] = None) -> Credentials:
     """Resolves and loads Google service account credentials, trying the Keychain, env var, and file fallback."""
     if scopes is None:
         scopes = [
@@ -11,17 +12,17 @@ def resolve_credentials(credentials_path, scopes=None):
             'https://www.googleapis.com/auth/drive'
         ]
 
-    credentials = None
+    credentials: Optional[Credentials] = None
 
     # 1. Try Keychain loading via keyring library
     try:
         import keyring
-        keyring_service = "BudgetingAutomation"
-        keyring_account = "google_service_account"
-        credentials_json_string = keyring.get_password(keyring_service, keyring_account)
+        keyring_service: str = "BudgetingAutomation"
+        keyring_account: str = "google_service_account"
+        credentials_json_string: Optional[str] = keyring.get_password(keyring_service, keyring_account)
         if credentials_json_string:
             print("\nConnecting to Google Sheets using credentials from macOS Keychain...")
-            credentials_info = json.loads(credentials_json_string)
+            credentials_info: Dict[str, Any] = json.loads(credentials_json_string)
             credentials = Credentials.from_service_account_info(credentials_info, scopes=scopes)
             return credentials
     except Exception as keyring_error:
@@ -29,11 +30,11 @@ def resolve_credentials(credentials_path, scopes=None):
         pass
 
     # 2. Try Environment Variable fallback
-    credentials_env_value = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    credentials_env_value: Optional[str] = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
     if credentials_env_value:
         print("\nConnecting to Google Sheets using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable...")
         try:
-            credentials_info = json.loads(credentials_env_value)
+            credentials_info: Dict[str, Any] = json.loads(credentials_env_value)
             credentials = Credentials.from_service_account_info(credentials_info, scopes=scopes)
             return credentials
         except Exception as env_error:
@@ -41,7 +42,7 @@ def resolve_credentials(credentials_path, scopes=None):
             sys.exit(1)
 
     # 3. Try plain-text local file fallback
-    absolute_credentials_path = os.path.abspath(credentials_path)
+    absolute_credentials_path: str = os.path.abspath(credentials_path)
     if not os.path.exists(absolute_credentials_path):
         print(f"Error: Credentials not found in macOS Keychain, GOOGLE_APPLICATION_CREDENTIALS_JSON, or at file: {absolute_credentials_path}")
         print("Please follow the setup_guide.md to generate and securely store your service account key.")

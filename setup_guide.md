@@ -12,7 +12,6 @@ Here is a breakdown of the repository layout:
 Budgeting/
 ├── app.py                      # Main runner and orchestration script
 ├── requirements.txt            # Python dependencies (gspread, google-auth, keyring)
-├── transaction_rules.json      # Local category matching rules (maps categories to regex arrays)
 ├── all_accounts.json           # Cached backup of valid Google Sheet accounts
 ├── setup_guide.md              # API and Keychain credential configuration instructions
 │
@@ -21,7 +20,8 @@ Budgeting/
 │   ├── config.py               # Contribution constants, directories, and bank statement regex patterns
 │   ├── auth.py                 # Secure credentials lookup and authentication resolution logic
 │   ├── parser.py               # Statement parser functions (NFCU Checking, AMX, Chase, etc.)
-│   └── categorizer.py          # Category rules matching and transfer look-ahead logic
+│   ├── categorizer.py          # Category rules matching and transfer look-ahead logic
+│   └── category_rules_regex.json # Local category matching rules (maps categories to regex arrays)
 │
 ├── Statements/                 # Local directory containing statement folders
 │   ├── NFCU/                   # Place Checking.csv, Visa.csv, and AMX.csv here
@@ -65,7 +65,7 @@ Budgeting/
 8. Select **JSON** as the key type and click **Create**.
 9. The JSON file will download automatically to your computer.
 10. Rename this file to `service_account.json` and move it to your project directory:
-    `/Users/angel/Documents/Dev/Budgeting/service_account.json`
+    `/Users/angel/Documents/GitHub/budgeting/service_account.json`
 
 ---
 
@@ -83,7 +83,7 @@ Budgeting/
 
 1. Open a terminal and navigate to the project directory:
    ```bash
-   cd /Users/angel/Documents/Dev/Budgeting
+   cd /Users/angel/Documents/GitHub/budgeting
    ```
 
 2. Create a Python virtual environment:

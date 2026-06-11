@@ -1,22 +1,23 @@
 import os
+from typing import Dict, Any
 
 # Google Sheet Name
-SHEET_NAME = "Budgeting Sheet"
+SHEET_NAME: str = "Budgeting Sheet"
 
 # Directories (SCRIPT_DIR points to repository root, i.e., parent of core/)
-CORE_DIR = os.path.dirname(os.path.abspath(__file__))
-SCRIPT_DIR = os.path.dirname(CORE_DIR)
-STATEMENTS_DIR = os.path.join(SCRIPT_DIR, "statements")
+CORE_DIR: str = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR: str = os.path.dirname(CORE_DIR)
+STATEMENTS_DIR: str = os.path.join(SCRIPT_DIR, "statements")
 
 # Contribution tracking constants
-CONTRIBUTION_401K_AMOUNT = 1020.83
-CONTRIBUTION_HSA_AMOUNT = 130.00
+CONTRIBUTION_401K_AMOUNT: float = 1020.83
+CONTRIBUTION_HSA_AMOUNT: float = 130.00
 
 # Configuration of bank accounts and statement file patterns
-ACCOUNTS_CONFIG = {
+ACCOUNTS_CONFIG: Dict[str, Dict[str, Any]] = {
     'nfcu_checking': {
         'folder': 'NFCU',
-        'pattern': r'^checkings?\.csv$',
+        'pattern': r'^checking?\.csv$',
         'account_type': 'cash',
         'default_name': 'NFCU Checking',
         'parser': 'nfcu'

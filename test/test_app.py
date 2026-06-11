@@ -10,7 +10,8 @@ from datetime import date
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core import (
-    parse_nfcu_csv, 
+    parse_nfcu_csv_credit,
+    parse_nfcu_csv_checking, 
     parse_amx_csv, 
     parse_chase_csv, 
     match_transaction_type, 
@@ -58,8 +59,8 @@ class TestBudgetAutomation(unittest.TestCase):
             csv_writer.writerow(["05/10/2026", "05/10/2026", "500.00", "Deposit Lyra via Coupa Inc"])
             csv_writer.writerow(["05/01/2026", "05/01/2026", "50.00", "Transfer to Coinbase"])
 
-        # Parse with account_type='cash'
-        transactions = parse_nfcu_csv(file_path, account_type='cash')
+        # Parse with parse_nfcu_csv_checking
+        transactions = parse_nfcu_csv_checking(file_path)
         self.assertEqual(len(transactions), 7)
         
         # Outflow: Payment to Banner Life -> -73.64
@@ -103,8 +104,8 @@ class TestBudgetAutomation(unittest.TestCase):
             csv_writer.writerow(["05/01/2026", "05/01/2026", "70.00", "Credit Card Payment Received", "Payment"])
             csv_writer.writerow(["04/01/2026", "03/31/2026", "70.00", "Astound Wilkes-Barre", "Purchase"])
 
-        # Parse with account_type='credit'
-        transactions = parse_nfcu_csv(file_path, account_type='credit')
+        # Parse with parse_nfcu_csv_credit
+        transactions = parse_nfcu_csv_credit(file_path)
         self.assertEqual(len(transactions), 2)
 
         # Payment -> Should be positive (70.00)
@@ -180,6 +181,28 @@ class TestBudgetAutomation(unittest.TestCase):
         transaction_hsa = {'description': "HSA", 'amount': -CONTRIBUTION_HSA_AMOUNT, 'date': date(2026, 5, 14)}
         self.assertEqual(match_transaction_type(transaction_hsa, 'nfcu_checking', {}, valid_types_with_contribs, MOCK_RULES), "HSA")
 
+    def test_match_transaction_type_special_apple_rule(self):
+        valid_types = ["Account Transfer", "Balance Adjustment", "Mom Aid", "Shopping"]
+        
+        # Test Case 1: Contains Apple and amount is -2.99 (negative outflow) -> Mom Aid
+        transaction_apple_special_negative = {'description': "APPLE.COM BILL", 'amount': -2.99, 'date': date(2026, 5, 20)}
+        self.assertEqual(match_transaction_type(transaction_apple_special_negative, 'chase_visa', {}, valid_types, MOCK_RULES), "Mom Aid")
+
+        # Test Case 2: Contains Apple and amount is 2.99 (positive representation) -> Mom Aid
+        transaction_apple_special_positive = {'description': "Apple Services", 'amount': 2.99, 'date': date(2026, 5, 20)}
+        self.assertEqual(match_transaction_type(transaction_apple_special_positive, 'chase_visa', {}, valid_types, MOCK_RULES), "Mom Aid")
+
+        # Test Case 3: Contains Apple but amount is not 2.99 (e.g., -9.99) -> falls back to regex rules (not matched in mock rules unless in regex)
+        transaction_apple_fallback = {'description': "APPLE.COM BILL", 'amount': -9.99, 'date': date(2026, 5, 20)}
+        self.assertEqual(match_transaction_type(transaction_apple_fallback, 'chase_visa', {}, valid_types, MOCK_RULES), "")
+
+        # Test Case 4: Falls back to regex matches if rules contains Mom Aid regex
+        custom_rules = {
+            "Mom Aid": ["apple\\.com", "starlink"]
+        }
+        transaction_apple_regex = {'description': "APPLE.COM BILL", 'amount': -9.99, 'date': date(2026, 5, 20)}
+        self.assertEqual(match_transaction_type(transaction_apple_regex, 'chase_visa', {}, valid_types, custom_rules), "Mom Aid")
+
     def test_match_transaction_type_transfers(self):
         valid_types = ["Account Transfer"]
         
@@ -236,7 +259,7 @@ class TestBudgetAutomation(unittest.TestCase):
         self.assertEqual(type_checking_exception_1, "Balance Adjustment")
         self.assertEqual(transaction_checking_exception_1['description'], "Transfer From Raymond Castillo Jr -0362")
 
-        transaction_checking_exception_2 = {'description': "Transfer from Zelle", 'amount': 200.00, 'date': date(2026, 5, 13)}
+        transaction_checking_exception_2 = {'description': "Transfer from Zelle", 'amount': 250.00, 'date': date(2026, 5, 13)}
         type_checking_exception_2 = match_transaction_type(transaction_checking_exception_2, 'nfcu_checking', {}, valid_types, MOCK_RULES)
         self.assertEqual(type_checking_exception_2, "Balance Adjustment")
         self.assertEqual(transaction_checking_exception_2['description'], "Transfer from Zelle")
