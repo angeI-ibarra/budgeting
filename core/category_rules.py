@@ -93,6 +93,30 @@ class MomAidSpecialCategoryRule(BaseCategoryRule):
     def get_category(self, valid_types: List[str], transaction: Dict[str, Any]) -> str:
         return "Mom Aid"
 
+@register_category_rule
+class RothIraCategoryRule(BaseCategoryRule):
+    "Matches Roth IRA"
+    def matches(self, transaction: Dict[str, Any], account_key: str, all_transactions: Dict[str, List[Dict[str, Any]]]) -> bool:
+        description_uppercase: str = transaction['description'].upper()
+        amount_value: float = transaction['amount']
+        if "FIDELITY INVESTMENTS" in description_uppercase and  abs(abs(amount_value) - 318.18) < 0.01:
+            return True
+
+    def get_category(self, valid_types: List[str], transaction: Dict[str, Any]) -> str:
+        return "Roth IRA"
+
+@register_category_rule
+class EmergencyFundCategoryRule(BaseCategoryRule):
+    "Matches Emergency Fund"
+    def matches(self, transaction: Dict[str, Any], account_key: str, all_transactions: Dict[str, List[Dict[str, Any]]]) -> bool:
+        description_uppercase: str = transaction['description'].upper()
+        amount_value: float = transaction['amount']
+        if "FIDELITY INVESTMENTS" in description_uppercase and  abs(abs(amount_value) - 400) < 0.01:
+            return True
+
+    def get_category(self, valid_types: List[str], transaction: Dict[str, Any]) -> str:
+        return "Emergency Fund"
+
 
 class RegexCategoryRule(BaseCategoryRule):
     """Standard regex pattern matching category rule compiled from json rules."""

@@ -6,6 +6,7 @@
   ],
   "Starting Balance": [],
   "Dining Out": [
+    "MCDONALD'S",
     "WINGS N THINGS",
     "YUM YUM DONUTS",
     "PHO",
@@ -43,7 +44,8 @@
     "EZELLS",
     "FRIDAS",
     "BIG MARI",
-    "PAGLIACCI"
+    "PAGLIACCI",
+    "SUPER TASTE"
   ],
   "Snacks": [
     "SALT AND STRAW",
@@ -155,11 +157,13 @@
     "PARKING"
   ],
   "Train Fare": [
-    "NYCT PAYGO"
+    "NYCT PAYGO",
+    "MTS PRONTO"
   ],
   "Tolls": [],
   "Uber": [
-    "UBER"
+    "UBER",
+    "Lyft"
   ],
   "Dining out w/ Date": [],
   "Date Nights": [],
@@ -225,7 +229,8 @@
   "Alcohol": [
     "BAR",
     "PUB",
-    "EL LUGAR"
+    "EL LUGAR",
+    "LSU MARIANS"
   ],
   "Weed": [],
   "Other AOD": [],
